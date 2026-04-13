@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LazyDuck</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>  LazyDuck 🦆</h1>
+      <p> Based on Groq </p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button id="clear-btn" onclick="clearHistory()">Clear All Massages</button>
+      <button id="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+    </div>
+  </header>
+
+  <div id="chat-box">
+    <p class="empty-state">Hey👋, Do you wanna talk with me?</p>
+  </div>  
+
+  <div id="input-area">
+    <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
+    <button id="send-btn" onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById('chat-box');
+    const input = document.getElementById('user-input');
+    const btn = document.getElementById('send-btn');
+    const themeToggle = document.getElementById('theme-toggle');
+
+    function loadTheme() {
+      const saved = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      updateThemeButton(saved);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      updateThemeButton(next);
+    }
+
+    function updateThemeButton(theme) {
+      themeToggle.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+    }
+
+    loadTheme();
+    loadHistory();
+
+    let pendingMessage = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 2000;
+
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+      history.forEach(function(item) {
+        appendMessage(item.text, item.role, item.id, false);
+      });
+    }
+
+    function saveToHistory(text, role, id) {
+      const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+      history.push({ text: text, role: role, id: id });
+      localStorage.setItem('chatHistory', JSON.stringify(history));
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('chatHistory');
+      chatBox.innerHTML = '<p class="empty-state">Hey👋, Do you wanna talk with me?</p>';
+    }
+
+    function linkify(text) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      return text.replace(urlRegex, function(url) {
+        return '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
+      });
+    }
+
+    function parseMarkdown(text) {
+      let html = text;
+      
+      // Code blocks
+      html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+        return '<pre><code class="language-' + lang + '">' + code.trim() + '</code></pre>';
+      });
+      
+      // Inline code
+      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+      
+      // Bold
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      
+      // Italic
+      html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      
+      // Headers
+      html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+      html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+      html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+      
+      // Lists
+      html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
+      html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+      html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+      
+      // Numbered lists
+      html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+      
+      // Blockquotes
+      html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+      
+      // Paragraphs
+      html = html.replace(/\n\n/g, '</p><p>');
+      html = '<p>' + html + '</p>';
+      html = html.replace(/<p><\/p>/g, '');
+      html = html.replace(/<p>(<h[1-3]>)/g, '$1');
+      html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
+      html = html.replace(/<p>(<pre>)/g, '$1');
+      html = html.replace(/(<\/pre>)<\/p>/g, '$1');
+      html = html.replace(/<p>(<ul>)/g, '$1');
+      html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+      html = html.replace(/<p>(<blockquote>)/g, '$1');
+      html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
+      
+      // Links
+      html = linkify(html);
+      
+      return html;
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    function appendMessage(text, role, messageId, save) {
+      if (save === undefined) save = true;
+      const emptyState = chatBox.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message-wrapper';
+      const id = messageId || Date.now().toString();
+      wrapper.dataset.messageId = id;
+
+      const div = document.createElement('div');
+      div.className = 'message ' + role;
+      
+      if (role === 'ai') {
+        div.innerHTML = parseMarkdown(text);
+      } else {
+        div.innerHTML = linkify(text);
+      }
+
+      wrapper.appendChild(div);
+
+      if (role === 'user') {
+        const actions = document.createElement('div');
+        actions.className = 'message-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = '✏️ Edit';
+        editBtn.onclick = function() { editMessage(wrapper, text); };
+
+        actions.appendChild(editBtn);
+        wrapper.appendChild(actions);
+      }
+
+      chatBox.appendChild(wrapper);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      if (save) {
+        saveToHistory(text, role, id);
+      }
+
+      return wrapper;
+    }
+
+    function editMessage(wrapper, originalText) {
+      const messageDiv = wrapper.querySelector('.message');
+      const actionsDiv = wrapper.querySelector('.message-actions');
+
+      const editInput = document.createElement('textarea');
+      editInput.className = 'edit-input';
+      editInput.value = originalText;
+      editInput.style.cssText = 'width: 100%; min-height: 60px; padding: 8px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; resize: vertical;';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'edit-btn';
+      saveBtn.textContent = '✓ Save';
+      saveBtn.style.marginTop = '6px';
+      saveBtn.onclick = function() { saveEdit(wrapper, editInput.value, originalText); };
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'edit-btn';
+      cancelBtn.textContent = '✕ Cancel';
+      cancelBtn.style.marginTop = '6px';
+      cancelBtn.style.marginLeft = '6px';
+      cancelBtn.onclick = function() { cancelEdit(wrapper, originalText); };
+
+      messageDiv.style.display = 'none';
+      if (actionsDiv) actionsDiv.style.display = 'none';
+
+      wrapper.insertBefore(editInput, messageDiv);
+      wrapper.insertBefore(saveBtn, messageDiv);
+      wrapper.insertBefore(cancelBtn, messageDiv);
+      editInput.focus();
+    }
+
+    function saveEdit(wrapper, newText, originalText) {
+      if (!newText.trim()) return;
+
+      let next = wrapper.nextElementSibling;
+      while (next) {
+        const toRemove = next;
+        next = next.nextElementSibling;
+        toRemove.remove();
+      }
+
+      const messageDiv = wrapper.querySelector('.message');
+      messageDiv.textContent = newText;
+      messageDiv.style.display = '';
+
+      const editInput = wrapper.querySelector('.edit-input');
+      const buttons = wrapper.querySelectorAll('.edit-btn');
+      if (editInput) editInput.remove();
+      buttons.forEach(function(btn) {
+        if (btn.textContent.includes('Save') || btn.textContent.includes('Cancel')) {
+          btn.remove();
+        }
+      });
+
+      const actionsDiv = wrapper.querySelector('.message-actions');
+      if (actionsDiv) actionsDiv.style.display = '';
+
+      pendingMessage = newText;
+      retryCount = 0;
+      sendToAI(newText);
+    }
+
+    function cancelEdit(wrapper, originalText) {
+      const messageDiv = wrapper.querySelector('.message');
+      messageDiv.style.display = '';
+
+      const editInput = wrapper.querySelector('.edit-input');
+      const buttons = wrapper.querySelectorAll('.edit-btn');
+      if (editInput) editInput.remove();
+      buttons.forEach(function(btn) {
+        if (btn.textContent.includes('Save') || btn.textContent.includes('Cancel')) {
+          btn.remove();
+        }
+      });
+
+      const actionsDiv = wrapper.querySelector('.message-actions');
+      if (actionsDiv) actionsDiv.style.display = '';
+    }
+
+    async function sendMessage() {
+      const message = input.value.trim();
+      if (!message) return;
+
+      appendMessage(message, 'user');
+      input.value = '';
+      btn.disabled = true;
+
+      pendingMessage = message;
+      retryCount = 0;
+
+      await sendToAI(message);
+    }
+
+    async function sendToAI(message) {
+      const typing = document.createElement('div');
+      typing.className = 'typing';
+      typing.textContent = 'AI is thinking...';
+      chatBox.appendChild(typing);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: message })
+        });
+
+        const data = await res.json();
+        typing.remove();
+
+        if (data.error) {
+          appendMessage('Error: ' + data.error, 'ai error');
+        } else {
+          appendMessage(data.reply, 'ai');
+          pendingMessage = null;
+          retryCount = 0;
+        }
+      } catch (err) {
+        typing.remove();
+
+        console.error('Network error:', err.message);
+        console.log('Retrying message: "' + message + '" (attempt ' + (retryCount + 1) + '/' + MAX_RETRIES + ')');
+
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          const retryIndicator = document.createElement('div');
+          retryIndicator.className = 'message ai';
+          retryIndicator.innerHTML = '<span style="color: var(--error-text);">⚠️ Connection lost. Retrying (' + retryCount + '/' + MAX_RETRIES + ')...</span>';
+          chatBox.appendChild(retryIndicator);
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          setTimeout(function() {
+            retryIndicator.remove();
+            sendToAI(message);
+          }, RETRY_DELAY);
+        } else {
+          appendMessage('Network error after ' + MAX_RETRIES + ' retries. Please check your connection and try again.', 'ai error');
+          retryCount = 0;
+        }
+      }
+
+      btn.disabled = false;
+      input.focus();
+    }
+  </script>
+</body>
+</html>
