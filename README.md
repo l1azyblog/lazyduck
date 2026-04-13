@@ -14,7 +14,7 @@ Python (Flask) va Groq AI yordamida qurilgan oddiy AI chat veb ilovasi.
 private-ai/
 ├── app.py               # Flask backend (asosiy server fayl)
 ├── templates/
-│   └── LHome.html       # Frontend (chat sahifasi)
+│   └── lhome.html       # Frontend (chat sahifasi)
 ├── static/
 │   └── style.css        # Dizayn fayli
 ├── requirements.txt     # Kerakli kutubxonalar ro'yxati
@@ -75,7 +75,7 @@ Brauzerda ochish: **http://localhost:5000**
 private-ai/
 ├── app.py               # Flask бэкенд (основной серверный файл)
 ├── templates/
-│   └── LHome.html       # Фронтенд (страница чата)
+│   └── lhome.html       # Фронтенд (страница чата)
 ├── static/
 │   └── style.css        # Файл стилей
 ├── requirements.txt     # Список зависимостей
@@ -136,7 +136,7 @@ A minimal AI chat web application built with Python (Flask) and Groq AI.
 private-ai/
 ├── app.py               # Flask backend (main server file)
 ├── templates/
-│   └── LHome.html       # Frontend (chat page)
+│   └── lhome.html       # Frontend (chat page)
 ├── static/
 │   └── style.css        # Stylesheet
 ├── requirements.txt     # Python dependencies
