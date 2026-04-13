@@ -36,10 +36,10 @@ pip install -r requirements.txt
 ```
 
 **3. API kalitni sozlash**
-- [groq.com](https://console.groq.com) ga kir va bepul API kalit ol
-- Loyiha papkasida `.env` fayli yarat va ichiga yoz:
+- [groq.com](https://console.groq.com) ga kiring va bepul API kalit oling
+- Loyiha papkasida `.env` fayli yaratish bilan birga, uning ichiga quyidagicha yozing:
 ```
-GROQ_API_KEY=sening_kalit_bu_yerga
+GROQ_API_KEY=API_KEY
 ```
 
 **4. Dasturni ishga tushirish**
