@@ -190,4 +190,4 @@ Open in browser: **http://localhost:5000**
 
 ## 🗺️ Arxitektura diagrammasi / Architecture Diagram
 
-![LazyDuck AI Chat — Qanday Ishlaydi?](static/diagram.png)
+![LazyDuck AI Chat](static/diagram.png)
