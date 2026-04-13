@@ -156,3 +156,5 @@ Fix: Added an edit feature — each sent message has an edit button. The user ca
 - What LLMs are and how they work
 - How to read error messages and fix bugs step by step
 - That you should always restart the server after making changes
+- How to deploy a web app to the internet using **Render.com** — I learned that Flask needs `gunicorn` to run in production, how to connect a GitHub repo to Render, and how to set environment variables (like the API key) safely in the dashboard instead of using a `.env` file
+- That not every platform supports Python backends — I first tried Netlify and Vercel but they are mainly for frontend apps, so I switched to Render which is built for backend services like Flask
