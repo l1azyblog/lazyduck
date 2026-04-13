@@ -99,12 +99,23 @@ This way the key only lives on my computer and is never public.
 
 I used Kiro AI to help me understand and build this project. Some prompts I used:
 
+**Backend (Python/Flask):**
 - *"Explain what Flask is for a beginner"*
 - *"What is CORS and why do I need it?"*
 - *"How do I load an API key from a .env file?"*
 - *"Why do we write Flask(__name__)?"*
 - *"How does an LLM API work in simple words?"*
 - *"What does .gitignore do?"*
+
+**Frontend (HTML/CSS):**
+
+Since I don't know HTML and CSS well, I also asked AI to help me write parts of the frontend. Some prompts I used:
+
+- *"Write me a simple chat UI in HTML and CSS"*
+- *"Make the chat bubbles look different for user and AI messages"*
+- *"How do I make the input stay at the bottom of the page?"*
+- *"Write a JavaScript function that sends a message to /chat and shows the reply"*
+- *"Make the chat page look clean and modern with CSS"*
 
 ---
 
