@@ -121,21 +121,29 @@ Since I don't know HTML and CSS well, I also asked AI to help me write parts of 
 
 ## 7. Problems I Faced and How I Fixed Them
 
-**Problem 1: `No module named 'flask'`**
-Flask was not installed.
-Fix: `pip install -r requirements.txt`
+**Problem 1: API key was exposed on GitHub**
+I accidentally committed the `.env` file which contained my secret Groq API key. GitHub detected it and blocked the push entirely.
+Fix: Removed `.env` from the entire git history using `git filter-branch`, force pushed, then immediately deleted the old API key and created a new one on Groq console.
 
-**Problem 2: `No module named 'groq'`**
-`groq` was missing from `requirements.txt`.
-Fix: Added `groq` to the file and ran `pip install -r requirements.txt`
+**Problem 2: Frontend and backend were not connecting**
+When JavaScript sent a message to `/chat`, the browser was blocking the request because the frontend and backend were on different origins.
+Fix: Added `Flask-CORS` to the backend so the server accepts requests from the frontend.
 
-**Problem 3: `TemplateNotFound: index.html`**
-I renamed the HTML file but forgot to restart the server.
-Fix: Stopped with `Ctrl+C` and restarted with `python app.py`
+**Problem 3: The AI response had no error handling**
+Early on, if the Groq API was down or the key was wrong, the whole app would crash with an unhandled exception.
+Fix: Wrapped the API call in a `try/except` block so the app returns a clean error message instead of crashing.
 
-**Problem 4: GitHub blocked my push**
-My `.env` file with the API key was inside a commit.
-Fix: Removed `.env` from git history and force pushed. Then created a new API key.
+**Problem 4: Empty messages were being sent to the AI**
+If the user clicked send without typing anything, an empty string was sent to Groq which wasted API calls.
+Fix: Added a check with `.strip()` — if the message is empty after removing spaces, return an error before calling the API.
+
+**Problem 5: Chat history disappeared on page refresh**
+Every time the user refreshed the page, all previous messages were gone. This made the app feel broken and unusable.
+Fix: Used the browser's `localStorage` to save chat messages. Now when the page loads, it reads the saved history and shows it back to the user automatically.
+
+**Problem 6: Users could not fix typos after sending a message**
+Once a message was sent, there was no way to correct it. This was frustrating especially for longer messages.
+Fix: Added an edit feature — each sent message has an edit button. The user can click it, change the text, and resend it to the AI.
 
 ---
 
